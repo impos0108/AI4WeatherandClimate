@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>WeatherBench 2 ERA5 EDA 구축 프로세스</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {  background-color: #f8f8f8; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ef2929; } /* Alert */
+    code span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #204a87; } /* Attribute */
+    code span.bn { color: #0000cf; } /* BaseN */
+    code span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4e9a06; } /* Char */
+    code span.cn { color: #8f5902; } /* Constant */
+    code span.co { color: #8f5902; font-style: italic; } /* Comment */
+    code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+    code span.dt { color: #204a87; } /* DataType */
+    code span.dv { color: #0000cf; } /* DecVal */
+    code span.er { color: #a40000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #0000cf; } /* Float */
+    code span.fu { color: #204a87; font-weight: bold; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+    code span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+    code span.ot { color: #8f5902; } /* Other */
+    code span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+    code span.sc { color: #ce5c00; font-weight: bold; } /* SpecialChar */
+    code span.ss { color: #4e9a06; } /* SpecialString */
+    code span.st { color: #4e9a06; } /* String */
+    code span.va { color: #000000; } /* Variable */
+    code span.vs { color: #4e9a06; } /* VerbatimString */
+    code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <style>body { max-width: 960px; padding: 2em; }</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">WeatherBench 2 ERA5 EDA 구축 프로세스</h1>
+</header>
+<h1 id="weatherbench-2-era5-eda-노트북-구축-프로세스">WeatherBench 2
+ERA5 EDA 노트북 구축 프로세스</h1>
+<h2 id="목표">1. 목표</h2>
+<ul>
+<li>WeatherBench 2 ERA5 Zarr 데이터(GCS 공개 버킷)를 xarray로 불러와 EDA
+수행</li>
+<li>서울 좌표(37.56°N, 126.97°E) 기준 2020년 데이터 필터링</li>
+<li>월별 총 강수량을 바 차트로 시각화</li>
+<li>결과물: <code>wb2_eda.ipynb</code></li>
+</ul>
+<hr />
+<h2 id="노트북-생성-wb2_eda.ipynb">2. 노트북 생성
+(<code>wb2_eda.ipynb</code>)</h2>
+<p><strong>노트북 구성 (7개 섹션)</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>섹션</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0. 패키지 임포트</td>
+<td>xarray, gcsfs, matplotlib, pandas, numpy</td>
+</tr>
+<tr class="even">
+<td>1. 데이터 로드</td>
+<td>GCS 익명 접근 + <code>xr.open_zarr()</code> + Dask lazy loading</td>
+</tr>
+<tr class="odd">
+<td>2. EDA</td>
+<td>차원/좌표/변수 목록/시간 범위/격자 간격 확인</td>
+</tr>
+<tr class="even">
+<td>3. 필터링</td>
+<td>서울 <code>method='nearest'</code> + 2020년 슬라이스</td>
+</tr>
+<tr class="odd">
+<td>4. 월별 집계</td>
+<td>6h 누적 강수량 합산 → mm 변환</td>
+</tr>
+<tr class="even">
+<td>5. 바 차트</td>
+<td>월별 강수량 시각화 (강도별 색상, 기준선, 수치 레이블)</td>
+</tr>
+<tr class="odd">
+<td>6. 시계열</td>
+<td>6h 강수량 + 7일 이동평균 플롯</td>
+</tr>
+<tr class="even">
+<td>7. 요약 통계</td>
+<td>월별 강수량 테이블 + 비율</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 구현</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># GCS 익명 접근</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>fs <span class="op">=</span> gcsfs.GCSFileSystem(token<span class="op">=</span><span class="st">&#39;anon&#39;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> xr.open_zarr(store, consolidated<span class="op">=</span><span class="va">True</span>, chunks<span class="op">=</span>{<span class="st">&#39;time&#39;</span>: <span class="dv">100</span>})</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 서울 필터링</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>tp_seoul_2020 <span class="op">=</span> ds[<span class="st">&#39;total_precipitation_6hr&#39;</span>] <span class="op">\</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    .sel(time<span class="op">=</span><span class="bu">slice</span>(<span class="st">&#39;2020-01-01&#39;</span>, <span class="st">&#39;2020-12-31&#39;</span>)) <span class="op">\</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    .sel(latitude<span class="op">=</span><span class="fl">37.56</span>, longitude<span class="op">=</span><span class="fl">126.97</span>, method<span class="op">=</span><span class="st">&#39;nearest&#39;</span>)</span></code></pre></div>
+<hr />
+<h2 id="환경-구축-miniconda">3. 환경 구축 (Miniconda)</h2>
+<h3 id="miniconda-설치">3-1. Miniconda 설치</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 설치 스크립트 다운로드</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh <span class="at">-O</span> ~/Miniconda3-latest-Linux-x86_64.sh</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 자동 설치 (~/miniconda3)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> ~/Miniconda3-latest-Linux-x86_64.sh <span class="at">-b</span> <span class="at">-p</span> ~/miniconda3</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 셸 초기화</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">~/miniconda3/bin/conda</span> init bash</span></code></pre></div>
+<h3 id="anaconda-tos-동의-신규-설치-시-필요">3-2. Anaconda ToS 동의
+(신규 설치 시 필요)</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> tos accept <span class="at">--override-channels</span> <span class="at">--channel</span> https://repo.anaconda.com/pkgs/main</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> tos accept <span class="at">--override-channels</span> <span class="at">--channel</span> https://repo.anaconda.com/pkgs/r</span></code></pre></div>
+<h3 id="전용-환경-생성-및-패키지-설치">3-3. 전용 환경 생성 및 패키지
+설치</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">-n</span> ai4weather python=3.12 <span class="at">-y</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate ai4weather</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install ipykernel xarray zarr gcsfs fsspec matplotlib pandas numpy dask</span></code></pre></div>
+<h3 id="jupyter-커널-등록">3-4. Jupyter 커널 등록</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> ipykernel install <span class="at">--user</span> <span class="at">--name</span><span class="op">=</span>ai4weather <span class="at">--display-name</span> <span class="st">&quot;Python (ai4weather)&quot;</span></span></code></pre></div>
+<blockquote>
+<p>VS Code에서 커널 선택 시 <strong>“Python (ai4weather)”</strong>
+선택</p>
+</blockquote>
+<hr />
+<h2 id="트러블슈팅">4. 트러블슈팅</h2>
+<h3 id="문제-1-ipykernel-패키지-없음">문제 1: <code>ipykernel</code>
+패키지 없음</h3>
+<pre><code>Running cells with &#39;Python 3.12.3&#39; requires the ipykernel package.</code></pre>
+<p><strong>원인:</strong> 시스템 Python에 ipykernel 미설치
+<strong>해결:</strong> conda 환경 생성 후 ipykernel 설치</p>
+<hr />
+<h3 id="문제-2-dask-없음">문제 2: Dask 없음</h3>
+<pre><code>ImportError: chunk manager &#39;dask&#39; is not available.</code></pre>
+<p><strong>원인:</strong> <code>xr.open_zarr(chunks=...)</code> 사용 시
+dask 필요 <strong>해결:</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install dask</span></code></pre></div>
+<hr />
+<h3 id="문제-3-matplotlib-한글-깨짐">문제 3: matplotlib 한글 깨짐</h3>
+<p><strong>원인:</strong> Linux 기본 환경에 한글 폰트 미설치
+<strong>해결 순서:</strong></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. 한글 폰트 설치</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> fonts-nanum</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. matplotlib 캐시 삭제 및 갱신</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">&quot;import matplotlib as mpl, shutil; shutil.rmtree(mpl.get_cachedir())&quot;</span></span></code></pre></div>
+<p>노트북 임포트 셀에 아래 코드 추가:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.font_manager <span class="im">as</span> fm</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>NANUM_PATH <span class="op">=</span> <span class="st">&#39;/usr/share/fonts/truetype/nanum/NanumGothic.ttf&#39;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>fm.fontManager.addfont(NANUM_PATH)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>prop <span class="op">=</span> fm.FontProperties(fname<span class="op">=</span>NANUM_PATH)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">&#39;font.family&#39;</span>] <span class="op">=</span> prop.get_name()</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">&#39;axes.unicode_minus&#39;</span>] <span class="op">=</span> <span class="va">False</span>  <span class="co"># 마이너스 기호 깨짐 방지</span></span></code></pre></div>
+<hr />
+<h2 id="vs-code-커널-재시작-방법">5. VS Code 커널 재시작 방법</h2>
+<table>
+<thead>
+<tr class="header">
+<th>방법</th>
+<th>실행</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>버튼</td>
+<td>노트북 상단 툴바 <strong>Restart (↺)</strong> 클릭</td>
+</tr>
+<tr class="even">
+<td>단축키</td>
+<td><code>Ctrl+Shift+P</code> →
+<code>Jupyter: Restart Kernel</code></td>
+</tr>
+<tr class="odd">
+<td>Run All</td>
+<td><code>Ctrl+Shift+P</code> → <code>Jupyter: Run All Cells</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="최종-파일-구조">6. 최종 파일 구조</h2>
+<pre><code>AI4WeatherandClimate/
+└── wb2_eda.ipynb                           # 메인 노트북
+└── seoul_monthly_precipitation_2020.png    # 월별 강수량 바 차트 (실행 후 생성)
+└── seoul_timeseries_precipitation_2020.png # 시계열 플롯 (실행 후 생성)
+
+~/miniconda3/envs/ai4weather/               # conda 환경</code></pre>
+</body>
+</html>
